@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SpeechLens</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;1,400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #070707;
+  --s1: #0e0e0e;
+  --s2: #141414;
+  --s3: #1c1c1c;
+  --s4: #242424;
+  --b1: #1e1e1e;
+  --b2: #2a2a2a;
+  --b3: #383838;
+  --t1: #efefef;
+  --t2: #909090;
+  --t3: #505050;
+  --t4: #303030;
+  --green: #00e676;
+  --gd: rgba(0,230,118,0.1);
+  --gd2: rgba(0,230,118,0.06);
+  --amber: #ffab00;
+  --ad: rgba(255,171,0,0.12);
+  --red: #ff5252;
+  --rd: rgba(255,82,82,0.1);
+  --blue: #40c4ff;
+  --bd: rgba(64,196,255,0.1);
+  --purple: #ce93d8;
+  --pd: rgba(206,147,216,0.1);
+}
+html,body { height:100%; background:var(--bg); color:var(--t1); font-family:'IBM Plex Sans',sans-serif; overflow:hidden; font-size:14px; }
+#app { display:grid; grid-template-columns:320px 1fr; grid-template-rows:48px 1fr; height:100vh; }
+
+/* HEADER */
+header { grid-column:1/-1; background:var(--s1); border-bottom:1px solid var(--b1); display:flex; align-items:center; padding:0 20px; gap:12px; z-index:10; }
+.logo { font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:600; color:var(--green); letter-spacing:.18em; text-transform:uppercase; }
+.logo-div { width:1px; height:16px; background:var(--b2); margin:0 4px; }
+.logo-sub { color:var(--t3); font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.06em; }
+.hdr-right { margin-left:auto; display:flex; align-items:center; gap:8px; }
+.hdr-group { display:flex; align-items:center; gap:6px; padding:0 10px; border-right:1px solid var(--b1); }
+.hdr-group:last-child { border-right:none; padding-right:0; }
+.hdr-label { font-size:10px; color:var(--t3); font-family:'IBM Plex Mono',monospace; letter-spacing:.1em; text-transform:uppercase; white-space:nowrap; }
+select, input[type=text] {
+  background:var(--s2); border:1px solid var(--b2); color:var(--t1);
+  font-family:'IBM Plex Mono',monospace; font-size:11px; padding:4px 8px;
+  border-radius:3px; outline:none; transition:border-color .15s;
+}
+select:focus, input[type=text]:focus { border-color:var(--green); }
+select { cursor:pointer; }
+#lang-input { width:72px; }
+.hdr-btn {
+  background:var(--s2); border:1px solid var(--b2); color:var(--t2);
+  font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:500;
+  letter-spacing:.08em; padding:5px 10px; border-radius:3px; cursor:pointer;
+  transition:all .15s; text-transform:uppercase; white-space:nowrap;
+}
+.hdr-btn:hover { border-color:var(--t3); color:var(--t1); }
+.hdr-btn.primary { background:var(--green); border-color:var(--green); color:#000; font-weight:600; }
+.hdr-btn.primary:hover { opacity:.85; }
+.hdr-btn.primary:active { transform:scale(.97); }
+.hdr-btn:disabled { opacity:.3; cursor:not-allowed; transform:none !important; }
+
+/* LEFT PANEL */
+#left { background:var(--s1); border-right:1px solid var(--b1); display:flex; flex-direction:column; overflow:hidden; }
+.panel-hdr { display:flex; align-items:center; justify-content:space-between; padding:10px 16px; border-bottom:1px solid var(--b1); flex-shrink:0; }
+.panel-hdr-label { font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.14em; text-transform:uppercase; color:var(--t3); }
+.panel-hdr-actions { display:flex; gap:6px; }
+.micro-btn { background:none; border:none; color:var(--t3); font-size:10px; font-family:'IBM Plex Mono',monospace; cursor:pointer; padding:2px 6px; border-radius:2px; transition:color .15s, background .15s; }
+.micro-btn:hover { color:var(--t1); background:var(--s3); }
+.micro-btn.red:hover { color:var(--red); }
+
+/* DROP ZONE */
+#drop-zone {
+  margin:12px; border:1px dashed var(--b2); border-radius:6px;
+  padding:20px 12px; text-align:center; cursor:pointer;
+  transition:border-color .2s, background .2s; flex-shrink:0;
+}
+#drop-zone:hover, #drop-zone.drag-over { border-color:var(--green); background:var(--gd2); }
+.drop-icon { font-size:22px; margin-bottom:6px; opacity:.4; }
+.drop-main { font-size:12px; color:var(--t2); margin-bottom:3px; }
+.drop-main span { color:var(--green); }
+.drop-sub { font-size:10px; color:var(--t3); font-family:'IBM Plex Mono',monospace; line-height:1.6; }
+#file-input { display:none; }
+
+/* FILE LIST */
+#file-list-wrap { flex:1; overflow-y:auto; padding:0 8px 8px; }
+#file-list-wrap::-webkit-scrollbar { width:3px; }
+#file-list-wrap::-webkit-scrollbar-thumb { background:var(--b2); border-radius:2px; }
+
+.file-item {
+  background:var(--s2); border:1px solid var(--b1); border-radius:5px;
+  padding:8px 10px; margin-bottom:4px; cursor:pointer;
+  transition:border-color .12s, background .12s;
+  position:relative; user-select:none;
+}
+.file-item:hover { border-color:var(--b2); background:var(--s3); }
+.file-item.active { border-color:var(--green) !important; background:var(--gd2); }
+.file-item.running { border-color:var(--amber); background:var(--ad); }
+.file-item.error-state { border-color:var(--red); background:var(--rd); }
+.file-item.dragging-item { opacity:.4; }
+.file-item.drag-over-item { border-color:var(--blue); border-style:dashed; }
+
+.fi-top { display:flex; align-items:flex-start; gap:8px; }
+.fi-drag { color:var(--t4); font-size:12px; cursor:grab; flex-shrink:0; padding-top:1px; line-height:1; }
+.fi-drag:active { cursor:grabbing; }
+.fi-name { font-size:12px; font-weight:500; color:var(--t1); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fi-badge {
+  font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.06em;
+  text-transform:uppercase; padding:2px 6px; border-radius:2px;
+  background:var(--s3); color:var(--t3); border:1px solid var(--b1); flex-shrink:0;
+}
+.file-item.active .fi-badge { background:var(--gd); color:var(--green); border-color:rgba(0,230,118,.25); }
+.file-item.running .fi-badge { background:var(--ad); color:var(--amber); border-color:rgba(255,171,0,.3); animation:blink 1.2s infinite; }
+.file-item.error-state .fi-badge { background:var(--rd); color:var(--red); border-color:rgba(255,82,82,.3); }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+.fi-bot { display:flex; align-items:center; justify-content:space-between; margin-top:4px; padding-left:20px; }
+.fi-status { font-size:10px; color:var(--t3); font-family:'IBM Plex Mono',monospace; }
+.file-item.running .fi-status { color:var(--amber); }
+.file-item.active .fi-status { color:var(--green); }
+.file-item.error-state .fi-status { color:var(--red); }
+.fi-actions { display:flex; gap:4px; opacity:0; transition:opacity .12s; }
+.file-item:hover .fi-actions { opacity:1; }
+.fi-act-btn { background:none; border:none; color:var(--t3); font-size:11px; cursor:pointer; padding:2px 4px; border-radius:2px; transition:color .12s, background .12s; }
+.fi-act-btn:hover { color:var(--red); background:var(--rd); }
+
+/* BOTTOM STATS */
+#left-stats { border-top:1px solid var(--b1); padding:8px 16px; display:flex; gap:16px; flex-shrink:0; }
+.stat-item { display:flex; flex-direction:column; gap:1px; }
+.stat-key { font-size:9px; text-transform:uppercase; letter-spacing:.1em; color:var(--t3); font-family:'IBM Plex Mono',monospace; }
+.stat-val { font-size:12px; font-family:'IBM Plex Mono',monospace; color:var(--t2); }
+.stat-val.green { color:var(--green); }
+
+/* RIGHT PANEL */
+#right { display:flex; flex-direction:column; overflow:hidden; }
+
+/* RIGHT TOOLBAR */
+#right-toolbar { display:flex; align-items:center; gap:8px; padding:8px 16px; border-bottom:1px solid var(--b1); background:var(--s1); flex-shrink:0; flex-wrap:wrap; }
+.rt-section { display:flex; align-items:center; gap:6px; padding-right:12px; border-right:1px solid var(--b1); }
+.rt-section:last-child { border-right:none; padding-right:0; margin-left:auto; }
+.rt-label { font-size:9px; text-transform:uppercase; letter-spacing:.1em; color:var(--t3); font-family:'IBM Plex Mono',monospace; }
+.tool-btn {
+  background:var(--s2); border:1px solid var(--b1); color:var(--t2);
+  font-family:'IBM Plex Mono',monospace; font-size:10px; padding:4px 10px;
+  border-radius:3px; cursor:pointer; transition:all .12s; letter-spacing:.05em;
+  text-transform:uppercase; white-space:nowrap;
+}
+.tool-btn:hover { border-color:var(--b3); color:var(--t1); background:var(--s3); }
+.tool-btn:disabled { opacity:.3; cursor:not-allowed; }
+.tool-btn.green:hover { border-color:var(--green); color:var(--green); background:var(--gd); }
+.tool-btn.blue:hover { border-color:var(--blue); color:var(--blue); background:var(--bd); }
+.tool-btn.amber:hover { border-color:var(--amber); color:var(--amber); background:var(--ad); }
+.tool-btn.purple:hover { border-color:var(--purple); color:var(--purple); background:var(--pd); }
+
+/* META STRIP */
+#meta-strip { display:flex; gap:0; border-bottom:1px solid var(--b1); flex-shrink:0; background:var(--s1); overflow-x:auto; }
+#meta-strip::-webkit-scrollbar { height:0; }
+.meta-cell { padding:8px 16px; border-right:1px solid var(--b1); flex-shrink:0; }
+.meta-cell:last-child { border-right:none; }
+.meta-key { font-size:9px; text-transform:uppercase; letter-spacing:.1em; color:var(--t3); font-family:'IBM Plex Mono',monospace; margin-bottom:2px; }
+.meta-val { font-size:13px; font-family:'IBM Plex Mono',monospace; color:var(--t2); }
+.meta-val.accent { color:var(--green); }
+
+/* TABS */
+#tabs { display:flex; background:var(--s1); border-bottom:1px solid var(--b1); flex-shrink:0; }
+.tab { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--t3); padding:9px 16px; cursor:pointer; border-bottom:2px solid transparent; transition:color .12s, border-color .12s; margin-bottom:-1px; }
+.tab:hover { color:var(--t2); }
+.tab.active { color:var(--green); border-bottom-color:var(--green); }
+
+/* CONTENT AREA */
+#content-wrap { flex:1; overflow:hidden; position:relative; display:flex; flex-direction:column; }
+
+#view-text { flex:1; display:none; flex-direction:column; overflow:hidden; }
+#transcript {
+  flex:1; width:100%; background:transparent; border:none; color:var(--t1);
+  font-family:'IBM Plex Sans',sans-serif; font-size:15px; line-height:1.85;
+  padding:24px 32px; resize:none; outline:none; overflow-y:auto;
+}
+#transcript::-webkit-scrollbar { width:4px; }
+#transcript::-webkit-scrollbar-thumb { background:var(--b2); border-radius:2px; }
+
+#view-segments { flex:1; display:none; overflow-y:auto; padding:0; }
+#view-segments::-webkit-scrollbar { width:4px; }
+#view-segments::-webkit-scrollbar-thumb { background:var(--b2); border-radius:2px; }
+.seg-row { display:grid; grid-template-columns:160px 1fr; border-bottom:1px solid var(--b1); transition:background .1s; }
+.seg-row:hover { background:var(--s2); }
+.seg-time { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t3); padding:10px 16px; border-right:1px solid var(--b1); display:flex; flex-direction:column; gap:2px; justify-content:center; }
+.seg-ts { color:var(--t4); font-size:9px; }
+.seg-text { padding:10px 20px; font-size:13px; line-height:1.65; color:var(--t1); display:flex; align-items:center; }
+
+#view-find { flex:1; display:none; flex-direction:column; overflow:hidden; }
+#find-bar { display:flex; gap:8px; align-items:center; padding:12px 20px; border-bottom:1px solid var(--b1); flex-shrink:0; }
+#find-input { flex:1; background:var(--s2); border:1px solid var(--b2); color:var(--t1); font-family:'IBM Plex Sans',sans-serif; font-size:13px; padding:6px 12px; border-radius:4px; outline:none; }
+#find-input:focus { border-color:var(--green); }
+#find-count { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--t3); min-width:60px; }
+#find-results { flex:1; overflow-y:auto; padding:8px; }
+#find-results::-webkit-scrollbar { width:4px; }
+#find-results::-webkit-scrollbar-thumb { background:var(--b2); border-radius:2px; }
+.find-result { background:var(--s2); border:1px solid var(--b1); border-radius:4px; padding:10px 14px; margin-bottom:6px; cursor:pointer; transition:border-color .12s; }
+.find-result:hover { border-color:var(--b3); }
+.find-result-file { font-size:10px; color:var(--t3); font-family:'IBM Plex Mono',monospace; margin-bottom:4px; }
+.find-result-text { font-size:13px; line-height:1.6; color:var(--t2); }
+.find-result-text mark { background:rgba(255,171,0,.25); color:var(--amber); border-radius:2px; padding:0 2px; }
+
+#view-merged { flex:1; display:none; flex-direction:column; overflow:hidden; }
+.merged-toolbar { display:flex; gap:8px; align-items:center; padding:10px 16px; border-bottom:1px solid var(--b1); flex-shrink:0; flex-wrap:wrap; }
+.merged-label { font-size:10px; color:var(--t3); font-family:'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:.08em; }
+#merged-area { flex:1; overflow-y:auto; padding:24px 32px; font-family:'IBM Plex Sans',sans-serif; font-size:14px; line-height:1.8; color:var(--t1); }
+#merged-area::-webkit-scrollbar { width:4px; }
+#merged-area::-webkit-scrollbar-thumb { background:var(--b2); border-radius:2px; }
+.merged-file-header { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--green); letter-spacing:.1em; text-transform:uppercase; margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid var(--b1); }
+.merged-block { margin-bottom:32px; }
+
+/* EMPTY STATE */
+#empty-state { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; pointer-events:none; }
+.empty-glyph { font-size:36px; opacity:.1; }
+.empty-txt { font-size:13px; color:var(--t3); font-family:'IBM Plex Mono',monospace; }
+.empty-sub { font-size:11px; color:var(--t4); }
+
+/* PROGRESS BAR */
+#prog-wrap { position:absolute; bottom:0; left:0; right:0; height:2px; background:var(--b1); display:none; }
+#prog-fill { height:100%; background:var(--amber); animation:prog-pulse 1.4s ease-in-out infinite; width:65%; }
+@keyframes prog-pulse { 0%,100%{opacity:1}50%{opacity:.45} }
+
+/* TOAST */
+.toast { position:fixed; bottom:20px; right:20px; background:var(--s3); border:1px solid var(--b2); color:var(--t1); font-family:'IBM Plex Mono',monospace; font-size:11px; padding:8px 16px; border-radius:4px; transform:translateY(60px); opacity:0; transition:transform .2s,opacity .2s; z-index:999; pointer-events:none; }
+.toast.show { transform:translateY(0); opacity:1; }
+.toast.ok { border-color:rgba(0,230,118,.4); color:var(--green); }
+.toast.err { border-color:rgba(255,82,82,.4); color:var(--red); }
+
+/* MODAL */
+.modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); display:none; align-items:center; justify-content:center; z-index:100; }
+.modal-overlay.open { display:flex; }
+.modal { background:var(--s2); border:1px solid var(--b2); border-radius:8px; padding:24px; min-width:360px; max-width:480px; }
+.modal-title { font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--t2); margin-bottom:16px; }
+.modal-body { margin-bottom:20px; }
+.modal-body p { font-size:13px; color:var(--t2); line-height:1.6; margin-bottom:10px; }
+.modal-body label { display:block; font-size:10px; color:var(--t3); font-family:'IBM Plex Mono',monospace; text-transform:uppercase; letter-spacing:.1em; margin-bottom:4px; margin-top:12px; }
+.modal-body select, .modal-body input[type=text] { width:100%; }
+.modal-footer { display:flex; gap:8px; justify-content:flex-end; }
+.modal-btn { background:var(--s3); border:1px solid var(--b2); color:var(--t2); font-family:'IBM Plex Mono',monospace; font-size:11px; padding:6px 14px; border-radius:3px; cursor:pointer; transition:all .12s; }
+.modal-btn:hover { border-color:var(--b3); color:var(--t1); }
+.modal-btn.confirm { background:var(--green); border-color:var(--green); color:#000; font-weight:600; }
+.modal-btn.confirm:hover { opacity:.85; }
+
+/* CHECKBOX */
+.check-row { display:flex; align-items:center; gap:8px; margin-bottom:4px; }
+.check-row input[type=checkbox] { accent-color:var(--green); width:14px; height:14px; }
+.check-row span { font-size:12px; color:var(--t2); }
+
+/* WAVEFORM PLACEHOLDER */
+#waveform { height:40px; background:var(--s2); border-bottom:1px solid var(--b1); display:none; align-items:center; padding:0 20px; gap:12px; flex-shrink:0; }
+.wave-bars { display:flex; gap:2px; align-items:center; height:24px; }
+.wave-bar { width:3px; background:var(--green); border-radius:2px; opacity:.6; animation:wave-anim var(--dur, .8s) ease-in-out infinite alternate; }
+@keyframes wave-anim { from{height:4px}to{height:var(--h,20px)} }
+.wave-info { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--t3); margin-left:auto; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <div class="logo">SpeechLens</div>
+    <div class="logo-div"></div>
+    <div class="logo-sub">local whisper · MIT</div>
+    <div class="hdr-right">
+      <div class="hdr-group">
+        <span class="hdr-label">Model</span>
+        <select id="model-sel">
+          <option value="tiny">tiny — fastest</option>
+          <option value="base">base — balanced</option>
+          <option value="small">small — good</option>
+          <option value="medium">medium — accurate</option>
+          <option value="large-v2">large-v2 — great</option>
+          <option value="large-v3" selected>large-v3 — best</option>
+        </select>
+      </div>
+      <div class="hdr-group">
+        <span class="hdr-label">Task</span>
+        <select id="task-sel">
+          <option value="transcribe">Transcribe</option>
+          <option value="translate">Translate → EN</option>
+        </select>
+      </div>
+      <div class="hdr-group">
+        <span class="hdr-label">Lang</span>
+        <input type="text" id="lang-input" placeholder="auto" title="e.g. en hi es fr">
+      </div>
+      <div class="hdr-group">
+        <button class="hdr-btn" id="btn-run-selected">Run Selected</button>
+        <button class="hdr-btn primary" id="btn-run-all" disabled>Run All</button>
+      </div>
+    </div>
+  </header>
+
+  <div id="left">
+    <div class="panel-hdr">
+      <span class="panel-hdr-label" id="queue-label">queue — 0 files</span>
+      <div class="panel-hdr-actions">
+        <button class="micro-btn" id="btn-select-all">select all</button>
+        <button class="micro-btn" id="btn-deselect-all">none</button>
+        <button class="micro-btn red" id="btn-clear-done">clear done</button>
+        <button class="micro-btn red" id="btn-clear-all">clear all</button>
+      </div>
+    </div>
+
+    <div id="drop-zone">
+      <div class="drop-icon">⬆</div>
+      <div class="drop-main">Drop files or <span id="browse-link">browse</span></div>
+      <div class="drop-sub">mp3 · wav · m4a · mp4 · flac · ogg<br>webm · aac · wma · opus</div>
+    </div>
+    <input type="file" id="file-input" multiple accept=".mp3,.wav,.m4a,.mp4,.flac,.ogg,.webm,.aac,.wma,.opus">
+
+    <div id="file-list-wrap">
+      <div id="file-list"></div>
+    </div>
+
+    <div id="left-stats">
+      <div class="stat-item">
+        <span class="stat-key">done</span>
+        <span class="stat-val green" id="stat-done">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-key">pending</span>
+        <span class="stat-val" id="stat-pending">0</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-key">words total</span>
+        <span class="stat-val" id="stat-words">0</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="right">
+    <div id="right-toolbar">
+      <div class="rt-section">
+        <span class="rt-label">Export</span>
+        <button class="tool-btn green" id="btn-dl-txt" disabled>TXT</button>
+        <button class="tool-btn green" id="btn-dl-srt" disabled>SRT</button>
+        <button class="tool-btn green" id="btn-dl-vtt" disabled>VTT</button>
+        <button class="tool-btn green" id="btn-dl-json" disabled>JSON</button>
+        <button class="tool-btn green" id="btn-dl-tsv" disabled>TSV</button>
+      </div>
+      <div class="rt-section">
+        <span class="rt-label">Merge</span>
+        <button class="tool-btn blue" id="btn-merge-view">View merged</button>
+        <button class="tool-btn blue" id="btn-merge-dl" disabled>Download merged</button>
+      </div>
+      <div class="rt-section">
+        <span class="rt-label">Edit</span>
+        <button class="tool-btn amber" id="btn-copy" disabled>Copy</button>
+        <button class="tool-btn amber" id="btn-copy-clean" disabled>Copy clean</button>
+        <button class="tool-btn amber" id="btn-word-wrap" disabled>Wrap</button>
+      </div>
+      <div class="rt-section">
+        <span class="rt-label">Find</span>
+        <button class="tool-btn purple" id="btn-find">Search all</button>
+      </div>
+    </div>
+
+    <div id="meta-strip">
+      <div class="meta-cell"><div class="meta-key">file</div><div class="meta-val" id="m-file">—</div></div>
+      <div class="meta-cell"><div class="meta-key">language</div><div class="meta-val accent" id="m-lang">—</div></div>
+      <div class="meta-cell"><div class="meta-key">words</div><div class="meta-val" id="m-words">—</div></div>
+      <div class="meta-cell"><div class="meta-key">chars</div><div class="meta-val" id="m-chars">—</div></div>
+      <div class="meta-cell"><div class="meta-key">time taken</div><div class="meta-val" id="m-time">—</div></div>
+      <div class="meta-cell"><div class="meta-key">segments</div><div class="meta-val" id="m-segs">—</div></div>
+    </div>
+
+    <div id="waveform">
+      <div class="wave-bars" id="wave-bars"></div>
+      <div class="wave-info" id="wave-info"></div>
+    </div>
+
+    <div id="tabs">
+      <div class="tab active" data-tab="text">Text</div>
+      <div class="tab" data-tab="segments">Segments</div>
+      <div class="tab" data-tab="find">Find</div>
+      <div class="tab" data-tab="merged">Merged</div>
+    </div>
+
+    <div id="content-wrap">
+      <div id="empty-state">
+        <div class="empty-glyph">◈</div>
+        <div class="empty-txt">no transcript yet</div>
+        <div class="empty-sub">add files · hit run all</div>
+      </div>
+
+      <div id="view-text">
+        <textarea id="transcript" spellcheck="false" placeholder="Transcript will appear here..."></textarea>
+      </div>
+
+      <div id="view-segments">
+        <div id="segments-list"></div>
+      </div>
+
+      <div id="view-find">
+        <div id="find-bar">
+          <input type="text" id="find-input" placeholder="Search across all transcripts...">
+          <span id="find-count">0 results</span>
+          <button class="tool-btn" id="btn-find-go">Search</button>
+        </div>
+        <div id="find-results"></div>
+      </div>
+
+      <div id="view-merged">
+        <div class="merged-toolbar">
+          <span class="merged-label">Separator</span>
+          <select id="merge-sep">
+            <option value="\n\n---\n\n">Horizontal rule</option>
+            <option value="\n\n">Blank line</option>
+            <option value="\n\n===\n\n">===</option>
+            <option value="\n">None</option>
+          </select>
+          <span class="merged-label" style="margin-left:8px">Order</span>
+          <select id="merge-order">
+            <option value="queue">Queue order</option>
+            <option value="name">Filename A-Z</option>
+          </select>
+          <button class="tool-btn blue" id="btn-refresh-merge" style="margin-left:auto">Refresh</button>
+          <button class="tool-btn green" id="btn-dl-merged-txt">Download .txt</button>
+        </div>
+        <div id="merged-area"></div>
+      </div>
+
+      <div id="prog-wrap"><div id="prog-fill"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- Download merged modal -->
+<div class="modal-overlay" id="merge-modal">
+  <div class="modal">
+    <div class="modal-title">Download merged transcript</div>
+    <div class="modal-body">
+      <p>Combine all completed transcripts into a single file.</p>
+      <label>Format</label>
+      <select id="merge-fmt"><option value="txt">Plain text (.txt)</option><option value="srt">SRT (.srt)</option></select>
+      <label>Separator</label>
+      <select id="merge-sep-dl">
+        <option value="\n\n---\n\n">Horizontal rule</option>
+        <option value="\n\n">Blank line</option>
+        <option value="\n">None</option>
+      </select>
+      <label>Include files</label>
+      <div id="merge-file-checks" style="max-height:140px;overflow-y:auto;margin-top:6px;padding:8px;background:var(--s1);border-radius:4px;border:1px solid var(--b1)"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" id="merge-modal-cancel">Cancel</button>
+      <button class="modal-btn confirm" id="merge-modal-confirm">Download</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const fileInput = $('file-input');
+const dropZone = $('drop-zone');
+const fileListEl = $('file-list');
+
+let queue = [];
+let activeId = null;
+let pollTimer = null;
+let wordWrap = false;
+let dragSrcId = null;
+let selectedIds = new Set();
+
+// ── TOAST ───────────────────────────────────────────────
+function toast(msg, type='') {
+  const t = $('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.className='toast', 2600);
+}
+
+// ── DRAG & DROP FILES ────────────────────────────────────
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('drag-over'); addFiles(e.dataTransfer.files); });
+dropZone.addEventListener('click', () => fileInput.click());
+$('browse-link').addEventListener('click', e => { e.stopPropagation(); fileInput.click(); });
+fileInput.addEventListener('change', () => { addFiles(fileInput.files); fileInput.value=''; });
+
+async function addFiles(files) {
+  const fd = new FormData();
+  [...files].forEach(f => fd.append('files', f));
+  try {
+    const res = await fetch('/upload', { method:'POST', body:fd });
+    const data = await res.json();
+    data.forEach(item => {
+      if (item.error) { toast(item.error, 'err'); return; }
+      queue.push({ id:item.id, name:item.name, size_mb:item.size_mb, status:'queued', message:'Queued', text:'', segments:[], language:'', elapsed:0, words:0, chars:0 });
+      selectedIds.add(item.id);
+    });
+    renderQueue();
+    if (!activeId && queue.length) selectFile(queue[0].id);
+    toast(`Added ${data.filter(d=>!d.error).length} file(s)`, 'ok');
+  } catch(e) { toast('Upload failed — is app.py running?', 'err'); }
+}
+
+// ── QUEUE RENDER ─────────────────────────────────────────
+function renderQueue() {
+  fileListEl.innerHTML = '';
+  queue.forEach((f, idx) => {
+    const isActive = f.id === activeId;
+    const isRunning = f.status === 'loading' || f.status === 'transcribing' || f.status === 'pending';
+    const isErr = f.status === 'error';
+    const isDone = f.status === 'done';
+    const isSelected = selectedIds.has(f.id);
+
+    const cls = ['file-item', isActive?'active':'', isRunning?'running':'', isErr?'error-state':''].filter(Boolean).join(' ');
+
+    const badge = { queued:'queued', pending:'in queue', loading:'loading', transcribing:'running', done:'done', error:'error' }[f.status] || f.status;
+    const statusTxt = f.status === 'pending' ? 'in queue...' : isRunning ? f.message : isDone ? `${f.words} words · ${f.elapsed}s` : isErr ? f.message : `${f.size_mb}mb`;
+
+    const el = document.createElement('div');
+    el.className = cls;
+    el.dataset.id = f.id;
+    el.draggable = true;
+    el.innerHTML = `
+      <div class="fi-top">
+        <div class="fi-drag" title="Drag to reorder">⠿</div>
+        <input type="checkbox" style="accent-color:var(--green);width:12px;height:12px;flex-shrink:0;margin-top:2px;cursor:pointer;" ${isSelected?'checked':''} data-check="${f.id}">
+        <div class="fi-name" title="${esc(f.name)}">${esc(f.name)}</div>
+        <div class="fi-badge">${badge}</div>
+      </div>
+      <div class="fi-bot">
+        <div class="fi-status">${statusTxt}</div>
+        <div class="fi-actions">
+          ${isDone ? `<button class="fi-act-btn" data-dl="${f.id}" title="Download TXT">↓</button>` : ''}
+          <button class="fi-act-btn" data-rm="${f.id}" title="Remove">✕</button>
+        </div>
+      </div>`;
+
+    el.querySelector('[data-check]').addEventListener('change', ev => {
+      ev.stopPropagation();
+      if (ev.target.checked) selectedIds.add(f.id); else selectedIds.delete(f.id);
+      updateRunButtons();
+    });
+    el.querySelector('[data-rm]').addEventListener('click', ev => { ev.stopPropagation(); removeFile(f.id); });
+    const dlBtn = el.querySelector('[data-dl]');
+    if (dlBtn) dlBtn.addEventListener('click', ev => { ev.stopPropagation(); window.location.href=`/download/${f.id}/txt`; });
+
+    el.addEventListener('click', e => {
+      if (e.target.dataset.rm || e.target.dataset.dl || e.target.dataset.check || e.target.classList.contains('fi-drag')) return;
+      selectFile(f.id);
+    });
+
+    // drag reorder
+    el.addEventListener('dragstart', e => { dragSrcId = f.id; el.classList.add('dragging-item'); e.dataTransfer.effectAllowed='move'; });
+    el.addEventListener('dragend', () => { dragSrcId=null; document.querySelectorAll('.file-item').forEach(x=>x.classList.remove('dragging-item','drag-over-item')); });
+    el.addEventListener('dragover', e => { e.preventDefault(); if (dragSrcId && dragSrcId!==f.id) el.classList.add('drag-over-item'); });
+    el.addEventListener('dragleave', () => el.classList.remove('drag-over-item'));
+    el.addEventListener('drop', e => {
+      e.preventDefault(); el.classList.remove('drag-over-item');
+      if (!dragSrcId || dragSrcId===f.id) return;
+      const fromIdx = queue.findIndex(x=>x.id===dragSrcId);
+      const toIdx = queue.findIndex(x=>x.id===f.id);
+      const [item] = queue.splice(fromIdx,1);
+      queue.splice(toIdx,0,item);
+      renderQueue();
+      fetch('/reorder',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({order:queue.map(x=>x.id)})});
+    });
+
+    fileListEl.appendChild(el);
+  });
+
+  // stats
+  const done = queue.filter(f=>f.status==='done');
+  const pending = queue.filter(f=>['queued','pending'].includes(f.status));
+  $('stat-done').textContent = done.length;
+  $('stat-pending').textContent = pending.length;
+  $('stat-words').textContent = done.reduce((a,f)=>a+f.words,0).toLocaleString();
+  $('queue-label').textContent = `queue — ${queue.length} file${queue.length!==1?'s':''}`;
+  updateRunButtons();
+}
+
+function updateRunButtons() {
+  const any = queue.length > 0;
+  $('btn-run-all').disabled = !any;
+  const anySelected = [...selectedIds].some(id => queue.find(f=>f.id===id));
+  $('btn-run-selected').disabled = !anySelected;
+}
+
+function removeFile(id) {
+  fetch(`/delete/${id}`,{method:'DELETE'}).catch(()=>{});
+  queue = queue.filter(f=>f.id!==id);
+  selectedIds.delete(id);
+  if (activeId===id) {
+    activeId = queue.length ? queue[0].id : null;
+    if (activeId) selectFile(activeId); else clearRight();
+  }
+  renderQueue();
+}
+
+function clearRight() {
+  $('transcript').value='';
+  $('segments-list').innerHTML='';
+  $('empty-state').style.display='flex';
+  $('view-text').style.display='none';
+  $('view-segments').style.display='none';
+  setMeta({});
+  setRightButtons(false);
+  $('prog-wrap').style.display='none';
+}
+
+// ── SELECT FILE ──────────────────────────────────────────
+function selectFile(id) {
+  activeId = id;
+  renderQueue();
+  const f = queue.find(x=>x.id===id);
+  if (!f) return;
+  $('m-file').textContent = f.name.length > 28 ? f.name.slice(0,26)+'…' : f.name;
+  if (f.status==='done') showTranscript(f);
+  else {
+    clearRight();
+    if (['pending','loading','transcribing'].includes(f.status)) {
+      $('prog-wrap').style.display='block';
+      showWave(f.name, f.size_mb);
+    }
+  }
+}
+
+function showWave(name, size) {
+  const wb = $('wave-bars'); wb.innerHTML='';
+  for(let i=0;i<32;i++){
+    const b=document.createElement('div'); b.className='wave-bar';
+    const h=8+Math.random()*18;
+    b.style.setProperty('--h',h+'px'); b.style.setProperty('--dur',(0.5+Math.random()*0.7)+'s');
+    b.style.animationDelay=(Math.random()*0.5)+'s';
+    wb.appendChild(b);
+  }
+  $('wave-info').textContent=`${name} · ${size}mb`;
+  $('waveform').style.display='flex';
+}
+
+function hideWave() { $('waveform').style.display='none'; }
+
+// ── SHOW TRANSCRIPT ──────────────────────────────────────
+function showTranscript(f) {
+  $('empty-state').style.display='none';
+  $('prog-wrap').style.display='none';
+  hideWave();
+  setMeta(f);
+  setRightButtons(true);
+
+  const activeTab = document.querySelector('.tab.active').dataset.tab;
+  showTab(activeTab, f);
+}
+
+function setMeta(f) {
+  $('m-lang').textContent = f.language||'—';
+  $('m-words').textContent = f.words ? f.words.toLocaleString() : '—';
+  $('m-chars').textContent = f.chars ? f.chars.toLocaleString() : '—';
+  $('m-time').textContent = f.elapsed ? f.elapsed+'s' : '—';
+  $('m-segs').textContent = f.segments ? f.segments.length : '—';
+}
+
+function setRightButtons(enabled) {
+  ['btn-dl-txt','btn-dl-srt','btn-dl-vtt','btn-dl-json','btn-dl-tsv','btn-copy','btn-copy-clean','btn-word-wrap'].forEach(id => $(id).disabled = !enabled);
+  const anyDone = queue.some(f=>f.status==='done');
+  $('btn-merge-dl').disabled = !anyDone;
+}
+
+// ── TABS ─────────────────────────────────────────────────
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    const f = queue.find(x=>x.id===activeId);
+    showTab(tab.dataset.tab, f);
+  });
+});
+
+function showTab(which, f) {
+  $('view-text').style.display='none';
+  $('view-segments').style.display='none';
+  $('view-find').style.display='none';
+  $('view-merged').style.display='none';
+
+  if (which==='text') {
+    $('view-text').style.display='flex';
+    $('transcript').value = f&&f.status==='done' ? f.text : '';
+  } else if (which==='segments') {
+    $('view-segments').style.display='block';
+    renderSegments(f&&f.status==='done' ? f.segments : []);
+  } else if (which==='find') {
+    $('view-find').style.display='flex';
+  } else if (which==='merged') {
+    $('view-merged').style.display='flex';
+    renderMerged();
+  }
+}
+
+function renderSegments(segs) {
+  $('segments-list').innerHTML = segs.map((s,i) => `
+    <div class="seg-row">
+      <div class="seg-time">
+        <div>${fmtTime(s.start)}</div>
+        <div class="seg-ts">${fmtTime(s.end)}</div>
+      </div>
+      <div class="seg-text">${esc(s.text)}</div>
+    </div>`).join('');
+}
+
+// ── MERGED VIEW ──────────────────────────────────────────
+function renderMerged() {
+  const sep = $('merge-sep').value.replace(/\\n/g,'\n');
+  const order = $('merge-order').value;
+  let files = queue.filter(f=>f.status==='done');
+  if (order==='name') files = [...files].sort((a,b)=>a.name.localeCompare(b.name));
+  $('merged-area').innerHTML = files.map(f => `
+    <div class="merged-block">
+      <div class="merged-file-header">${esc(f.name)}</div>
+      <div style="line-height:1.85;font-size:14px;color:var(--t1)">${esc(f.text)}</div>
+    </div>`).join(`<div style="border-top:1px solid var(--b1);margin:16px 0;color:var(--t3);font-family:IBM Plex Mono,monospace;font-size:10px;padding:4px 0">${sep.trim()||'─'}</div>`);
+  if (!files.length) $('merged-area').innerHTML='<div style="color:var(--t3);font-size:13px;padding:20px">No completed transcripts yet.</div>';
+}
+$('btn-refresh-merge').addEventListener('click', renderMerged);
+$('merge-sep').addEventListener('change', renderMerged);
+$('merge-order').addEventListener('change', renderMerged);
+
+// ── FIND / SEARCH ─────────────────────────────────────────
+$('btn-find').addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector('[data-tab=find]').classList.add('active');
+  showTab('find', null);
+  $('find-input').focus();
+});
+$('btn-find-go').addEventListener('click', doSearch);
+$('find-input').addEventListener('keydown', e => { if(e.key==='Enter') doSearch(); });
+
+function doSearch() {
+  const q = $('find-input').value.trim();
+  if (!q) return;
+  const res = [];
+  queue.filter(f=>f.status==='done').forEach(f => {
+    const segs = f.segments.filter(s=>s.text.toLowerCase().includes(q.toLowerCase()));
+    segs.forEach(s => res.push({file:f.name,fileId:f.id,text:s.text,start:s.start,end:s.end}));
+  });
+  $('find-count').textContent = `${res.length} result${res.length!==1?'s':''}`;
+  $('find-results').innerHTML = res.length ? res.map(r => `
+    <div class="find-result" data-file-id="${r.fileId}">
+      <div class="find-result-file">${esc(r.file)} · ${fmtTime(r.start)}</div>
+      <div class="find-result-text">${esc(r.text).replace(new RegExp(esc(q),'gi'), m=>`<mark>${m}</mark>`)}</div>
+    </div>`).join('') : '<div style="color:var(--t3);font-size:13px;padding:20px">No results found.</div>';
+  document.querySelectorAll('.find-result').forEach(el => {
+    el.addEventListener('click', () => {
+      const fid = el.dataset.fileId;
+      selectFile(fid);
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      document.querySelector('[data-tab=text]').classList.add('active');
+      showTab('text', queue.find(f=>f.id===fid));
+    });
+  });
+}
+
+// ── RUN ───────────────────────────────────────────────────
+async function runJobs(ids) {
+  if (!ids.length) { toast('No files to run','err'); return; }
+  const model = $('model-sel').value;
+  const lang = $('lang-input').value.trim();
+  const task = $('task-sel').value;
+  await fetch('/transcribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids,model,language:lang,task})});
+  startPolling();
+  renderQueue();
+  if (activeId && ids.includes(activeId)) { showWave(queue.find(f=>f.id===activeId)?.name,''); $('prog-wrap').style.display='block'; }
+}
+
+$('btn-run-all').addEventListener('click', () => runJobs(queue.map(f=>f.id)));
+$('btn-run-selected').addEventListener('click', () => runJobs([...selectedIds].filter(id=>queue.find(f=>f.id===id))));
+
+// ── POLL ──────────────────────────────────────────────────
+function startPolling() {
+  if (pollTimer) return;
+  pollTimer = setInterval(pollStatus, 1200);
+}
+
+async function pollStatus() {
+  const active = queue.filter(f=>['queued','pending','loading','transcribing'].includes(f.status));
+  if (!active.length) { clearInterval(pollTimer); pollTimer=null; return; }
+  try {
+    const ids = active.map(f=>f.id).join(',');
+    const res = await fetch(`/status?ids=${ids}`);
+    const data = await res.json();
+    let anyDone = false;
+    for (const [id, info] of Object.entries(data)) {
+      const f = queue.find(x=>x.id===id); if(!f) continue;
+      f.status=info.status; f.message=info.message; f.language=info.language;
+      f.elapsed=info.elapsed; f.words=info.words; f.chars=info.chars;
+      if (info.status==='done' && !f.text) {
+        const r = await fetch(`/result/${id}`);
+        const rd = await r.json();
+        f.text=rd.text; f.segments=rd.segments; anyDone=true;
+        if (id===activeId) showTranscript(f);
+      }
+    }
+    renderQueue();
+    const af = queue.find(x=>x.id===activeId);
+    if (af && ['queued','pending','loading','transcribing'].includes(af.status)) { $('prog-wrap').style.display='block'; }
+    if (anyDone) toast('Transcription complete','ok');
+  } catch(e){}
+}
+
+// ── TOOLBAR ACTIONS ───────────────────────────────────────
+$('btn-copy').addEventListener('click', () => {
+  const f = queue.find(x=>x.id===activeId); if(!f) return;
+  navigator.clipboard.writeText(f.text).then(()=>toast('Copied','ok'));
+});
+$('btn-copy-clean').addEventListener('click', () => {
+  const f = queue.find(x=>x.id===activeId); if(!f) return;
+  const clean = f.text.replace(/\s+/g,' ').trim();
+  navigator.clipboard.writeText(clean).then(()=>toast('Copied (clean)','ok'));
+});
+$('btn-word-wrap').addEventListener('click', () => {
+  wordWrap = !wordWrap;
+  $('transcript').style.whiteSpace = wordWrap ? 'pre-wrap' : 'pre';
+  $('btn-word-wrap').textContent = wordWrap ? 'Unwrap' : 'Wrap';
+});
+['txt','srt','vtt','json','tsv'].forEach(fmt => {
+  $(`btn-dl-${fmt}`).addEventListener('click', () => {
+    const f = queue.find(x=>x.id===activeId); if(!f) return;
+    window.location.href=`/download/${f.id}/${fmt}`;
+  });
+});
+
+// ── MERGE DOWNLOAD ────────────────────────────────────────
+$('btn-merge-view').addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelector('[data-tab=merged]').classList.add('active');
+  showTab('merged', null);
+});
+$('btn-merge-dl').addEventListener('click', () => {
+  const done = queue.filter(f=>f.status==='done');
+  const checks = $('merge-file-checks');
+  checks.innerHTML = done.map(f=>`
+    <div class="check-row">
+      <input type="checkbox" id="mc-${f.id}" value="${f.id}" checked>
+      <span>${esc(f.name)}</span>
+    </div>`).join('');
+  $('merge-modal').classList.add('open');
+});
+$('merge-modal-cancel').addEventListener('click', () => $('merge-modal').classList.remove('open'));
+$('merge-modal-confirm').addEventListener('click', async () => {
+  const ids = [...document.querySelectorAll('#merge-file-checks input:checked')].map(x=>x.value);
+  const fmt = $('merge-fmt').value;
+  const sep = $('merge-sep-dl').value;
+  const res = await fetch('/download_merged',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids,fmt,separator:sep.replace(/\\n/g,'\n')})});
+  const blob = await res.blob();
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=`merged_transcript.${fmt}`; a.click();
+  $('merge-modal').classList.remove('open');
+});
+$('btn-dl-merged-txt').addEventListener('click', async () => {
+  const done = queue.filter(f=>f.status==='done').map(f=>f.id);
+  const res = await fetch('/download_merged',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:done,fmt:'txt',separator:'\n\n---\n\n'})});
+  const blob = await res.blob();
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='merged_transcript.txt'; a.click();
+});
+
+// ── QUEUE CONTROLS ────────────────────────────────────────
+$('btn-select-all').addEventListener('click', () => { queue.forEach(f=>selectedIds.add(f.id)); renderQueue(); });
+$('btn-deselect-all').addEventListener('click', () => { selectedIds.clear(); renderQueue(); });
+$('btn-clear-done').addEventListener('click', () => { queue.filter(f=>f.status==='done').forEach(f=>{fetch(`/delete/${f.id}`,{method:'DELETE'}).catch(()=>{});selectedIds.delete(f.id);}); queue=queue.filter(f=>f.status!=='done'); if(!queue.find(f=>f.id===activeId)) clearRight(); renderQueue(); });
+$('btn-clear-all').addEventListener('click', () => { queue.forEach(f=>fetch(`/delete/${f.id}`,{method:'DELETE'}).catch(()=>{})); queue=[]; selectedIds.clear(); activeId=null; clearRight(); renderQueue(); });
+
+// ── UTILS ─────────────────────────────────────────────────
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtTime(t) {
+  const h=Math.floor(t/3600),m=Math.floor((t%3600)/60),s=Math.floor(t%60),ms=Math.round((t-Math.floor(t))*1000);
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')},${String(ms).padStart(3,'0')}`;
+}
+
+// init
+clearRight();
+renderQueue();
+</script>
+</body>
+</html>

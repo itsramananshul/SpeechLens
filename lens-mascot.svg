@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240" width="200" height="240">
+  <defs>
+    <radialGradient id="lensGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#00e676" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#00e676" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glassGrad" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#1a2e1a"/>
+      <stop offset="100%" stop-color="#0a1a0a"/>
+    </radialGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Outer glow -->
+  <circle cx="100" cy="85" r="72" fill="url(#lensGlow)"/>
+
+  <!-- Microscope body -->
+  <!-- Stand base -->
+  <rect x="60" y="210" width="80" height="10" rx="5" fill="#1e1e1e" stroke="#00e676" stroke-width="1.5"/>
+  <!-- Stand arm vertical -->
+  <rect x="94" y="140" width="12" height="75" rx="4" fill="#1c1c1c" stroke="#2a2a2a" stroke-width="1"/>
+  <!-- Stand arm horizontal -->
+  <rect x="70" y="138" width="60" height="10" rx="4" fill="#1c1c1c" stroke="#2a2a2a" stroke-width="1"/>
+
+  <!-- Tube body -->
+  <rect x="85" y="52" width="30" height="90" rx="8" fill="#141414" stroke="#2a2a2a" stroke-width="1.5"/>
+
+  <!-- Objective lens barrel -->
+  <rect x="89" y="130" width="22" height="28" rx="4" fill="#111" stroke="#00e676" stroke-width="1" filter="url(#glow)"/>
+  <ellipse cx="100" cy="160" rx="11" ry="5" fill="#0a0a0a" stroke="#00e676" stroke-width="1.5" filter="url(#glow)"/>
+
+  <!-- Main lens circle (eyepiece) -->
+  <circle cx="100" cy="68" r="44" fill="#0d0d0d" stroke="#2a2a2a" stroke-width="2"/>
+  <circle cx="100" cy="68" r="38" fill="url(#glassGrad)" stroke="#00e676" stroke-width="2" filter="url(#glow)"/>
+
+  <!-- Lens inner rings -->
+  <circle cx="100" cy="68" r="30" fill="none" stroke="#00e67622" stroke-width="1"/>
+  <circle cx="100" cy="68" r="20" fill="none" stroke="#00e67233" stroke-width="1"/>
+
+  <!-- Lens reflection highlight -->
+  <ellipse cx="88" cy="56" rx="9" ry="6" fill="white" opacity="0.05" transform="rotate(-20, 88, 56)"/>
+
+  <!-- Eyes inside lens -->
+  <circle cx="88" cy="68" r="7" fill="#0a0a0a" stroke="#00e676" stroke-width="1.5" filter="url(#glow)"/>
+  <circle cx="112" cy="68" r="7" fill="#0a0a0a" stroke="#00e676" stroke-width="1.5" filter="url(#glow)"/>
+  <circle cx="89" cy="67" r="3.5" fill="#00e676" opacity="0.9"/>
+  <circle cx="113" cy="67" r="3.5" fill="#00e676" opacity="0.9"/>
+  <circle cx="90" cy="66" r="1.2" fill="white" opacity="0.7"/>
+  <circle cx="114" cy="66" r="1.2" fill="white" opacity="0.7"/>
+
+  <!-- Smile -->
+  <path d="M 90 79 Q 100 87 110 79" stroke="#00e676" stroke-width="1.8" fill="none" stroke-linecap="round" filter="url(#glow)"/>
+
+  <!-- Eyepiece top -->
+  <rect x="88" y="22" width="24" height="32" rx="6" fill="#111" stroke="#2a2a2a" stroke-width="1.5"/>
+  <ellipse cx="100" cy="22" rx="12" ry="5" fill="#141414" stroke="#2a2a2a" stroke-width="1.5"/>
+
+  <!-- Focus knobs -->
+  <rect x="115" y="90" width="18" height="8" rx="4" fill="#1a1a1a" stroke="#00e676" stroke-width="1" filter="url(#glow)"/>
+  <rect x="115" y="102" width="14" height="7" rx="3.5" fill="#1a1a1a" stroke="#2a2a2a" stroke-width="1"/>
+
+  <!-- Sound waves coming from lens (showing it listens) -->
+  <path d="M 152 55 Q 162 68 152 81" stroke="#00e676" stroke-width="1.5" fill="none" stroke-linecap="round" opacity="0.6" filter="url(#glow)"/>
+  <path d="M 159 48 Q 174 68 159 88" stroke="#00e676" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.35"/>
+  <path d="M 166 42 Q 184 68 166 94" stroke="#00e676" stroke-width="1" fill="none" stroke-linecap="round" opacity="0.15"/>
+
+  <!-- Name tag -->
+  <rect x="52" y="192" width="96" height="22" rx="4" fill="#0f0f0f" stroke="#00e676" stroke-width="1" filter="url(#glow)"/>
+  <text x="100" y="207" text-anchor="middle" font-family="monospace" font-size="9" font-weight="bold" fill="#00e676" letter-spacing="2">SPEECHLENS</text>
+</svg>
